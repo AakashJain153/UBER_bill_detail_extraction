@@ -1,0 +1,6 @@
+Refined/
+__pycache__/
+*.xlsx
+*.log
+dist/
+build/
