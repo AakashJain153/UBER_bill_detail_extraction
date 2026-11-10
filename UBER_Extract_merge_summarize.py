@@ -33,18 +33,44 @@ def extract_details(pdf_path):
 
     lines = [l.strip() for l in text.split("\n") if l.strip()]
 
+
     # ---------------- DATE ----------------
     ride_date = None
-    date_match = re.search(r'([A-Za-z]+ \d{1,2}, \d{4})', text)
 
-    if date_match:
-        date_str = date_match.group(1)
-        for fmt in ("%b %d, %Y", "%B %d, %Y"):
+    # Match common Uber receipt date formats
+    date_patterns = [
+        r'\b([A-Za-z]{3,9}\s+\d{1,2},\s+\d{4})\b',
+        r'\b(\d{1,2}/\d{1,2}/\d{2,4})\b'
+    ]
+
+    date_str = None
+
+    for pattern in date_patterns:
+        date_match = re.search(pattern, text, re.IGNORECASE)
+        if date_match:
+            date_str = date_match.group(1).strip()
+            break
+
+    if date_str:
+        # Handle Uber's "Sept" abbreviation
+        date_str = re.sub(
+            r'^Sept\b', 'Sep', date_str, flags=re.IGNORECASE
+        )
+
+        for fmt in (
+            "%b %d, %Y",
+            "%B %d, %Y",
+            "%m/%d/%y",
+            "%m/%d/%Y"
+        ):
             try:
-                ride_date = datetime.strptime(date_str, fmt).date()
+                ride_date = datetime.strptime(
+                    date_str, fmt
+                ).date()
                 break
-            except:
+            except ValueError:
                 continue
+
 
     # ---------------- FARE ----------------
     total_match = re.search(r'Total ₹\s*([\d,]+\.\d{2})', text)
